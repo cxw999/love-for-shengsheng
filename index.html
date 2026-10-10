@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>给生生</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            height: 100vh;
+            overflow: hidden;
+            background: radial-gradient(circle at 50% 40%, #1b0a2e, #050510);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+            color: #fff;
+        }
+
+        .stars {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: #fff;
+            border-radius: 50%;
+            animation: twinkle 2s infinite alternate;
+        }
+
+        @keyframes twinkle {
+            from { opacity: 0.2; transform: scale(0.8); }
+            to   { opacity: 1;   transform: scale(1.2); }
+        }
+
+        .heart-box {
+            position: relative;
+            z-index: 2;
+            margin-bottom: 24px;
+        }
+
+        canvas#heartCanvas {
+            display: block;
+            width: 260px;
+            height: 240px;
+            filter: drop-shadow(0 0 18px rgba(255, 80, 120, 0.7));
+            animation: heartbeat 1.6s infinite ease-in-out;
+        }
+
+        @keyframes heartbeat {
+            0%   { transform: scale(1); }
+            15%  { transform: scale(1.12); }
+            30%  { transform: scale(1); }
+            45%  { transform: scale(1.08); }
+            60%  { transform: scale(1); }
+        }
+
+        .message {
+            z-index: 2;
+            text-align: center;
+            padding: 0 20px;
+            min-height: 48px;
+        }
+
+        .message h1 {
+            font-size: 26px;
+            letter-spacing: 2px;
+            text-shadow: 0 0 12px rgba(255, 120, 160, 0.8);
+        }
+
+        .message p {
+            margin-top: 10px;
+            font-size: 15px;
+            opacity: 0.85;
+            line-height: 1.6;
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 2px;
+            height: 18px;
+            background: #ff7eb3;
+            margin-left: 4px;
+            vertical-align: middle;
+            animation: blink 0.8s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50%      { opacity: 0; }
+        }
+
+        .hint {
+            position: fixed;
+            bottom: 24px;
+            font-size: 13px;
+            opacity: 0.5;
+            z-index: 2;
+        }
+    </style>
+</head>
+<body>
+
+<div class="stars" id="stars"></div>
+
+<div class="heart-box">
+    <canvas id="heartCanvas" width="520" height="480"></canvas>
+</div>
+
+<div class="message">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+</div>
+
+<div class="hint">点一下屏幕，会有小星星</div>
+
+<script>
+    // 星空背景
+    const starsBox = document.getElementById("stars");
+    for (let i = 0; i < 120; i++) {
+        const star = document.createElement("div");
+        star.className = "star";
+        star.style.left = Math.random() * 100 + "%";
+        star.style.top = Math.random() * 100 + "%";
+        star.style.animationDelay = (Math.random() * 2).toFixed(2) + "s";
+        star.style.width = star.style.height = (Math.random() * 2 + 1) + "px";
+        starsBox.appendChild(star);
+    }
+
+    // 粒子爱心
+    const canvas = document.getElementById("heartCanvas");
+    const ctx = canvas.getContext("2d");
+    const particles = [];
+
+    function heartPoint(t) {
+        const x = 16 * Math.pow(Math.sin(t), 3);
+        const y = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
+        return { x, y };
+    }
+
+    function createParticles() {
+        for (let i = 0; i < 180; i++) {
+            const t = (Math.PI * 2 * i) / 180;
+            const { x, y } = heartPoint(t);
+            particles.push({
+                baseX: x * 14 + 260,
+                baseY: y * 14 + 230,
+                x: x * 14 + 260,
+                y: y * 14 + 230,
+                size: Math.random() * 2 + 1.2,
+                alpha: Math.random() * 0.5 + 0.5,
+                speed: Math.random() * 0.3 + 0.1
+            });
+        }
+    }
+
+    function drawHeart() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        particles.forEach(p => {
+            p.y -= p.speed;
+            if (p.y < p.baseY - 18) {
+                p.y = p.baseY;
+                p.x = p.baseX;
+            }
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255, 110, 160, ${p.alpha})`;
+            ctx.fill();
+        });
+        requestAnimationFrame(drawHeart);
+    }
+
+    createParticles();
+    drawHeart();
+
+    // 打字机表白文字
+    const titleText = "生生，我喜欢你";
+    const subtitleText = "想把所有温柔、浪漫和偏爱，都悄悄给你。";
+    const titleEl = document.getElementById("title");
+    const subtitleEl = document.getElementById("subtitle");
+    let ti = 0, si = 0;
+
+    function typeTitle() {
+        if (ti <= titleText.length) {
+            titleEl.innerHTML = titleText.slice(0, ti) + '<span class="cursor"></span>';
+            ti++;
+            setTimeout(typeTitle, 180);
+        } else {
+            typeSubtitle();
+        }
+    }
+
+    function typeSubtitle() {
+        if (si <= subtitleText.length) {
+            subtitleEl.innerHTML = subtitleText.slice(0, si) + '<span class="cursor"></span>';
+            si++;
+            setTimeout(typeSubtitle, 120);
+        } else {
+            subtitleEl.innerHTML = subtitleText;
+        }
+    }
+
+    setTimeout(typeTitle, 600);
+
+    // 点击屏幕出现小星星
+    document.addEventListener("click", e => {
+        for (let i = 0; i < 12; i++) {
+            const spark = document.createElement("div");
+            spark.textContent = "✦";
+            spark.style.position = "fixed";
+            spark.style.left = e.clientX + "px";
+            spark.style.top = e.clientY + "px";
+            spark.style.color = "#ff9ecf";
+            spark.style.fontSize = (Math.random() * 14 + 10) + "px";
+            spark.style.pointerEvents = "none";
+            spark.style.transition = "all 1s ease-out";
+            spark.style.zIndex = "999";
+            document.body.appendChild(spark);
+
+            requestAnimationFrame(() => {
+                spark.style.transform = `translate(${(Math.random() - 0.5) * 120}px, ${-Math.random() * 120 - 40}px) scale(0.4)`;
+                spark.style.opacity = "0";
+            });
+
+            setTimeout(() => spark.remove(), 1100);
+        }
+    });
+</script>
+</body>
+</html>
